@@ -11,7 +11,7 @@ index.html          structure de la page (les 4 onglets + la vue séance)
 style.css           toutes les couleurs et tailles, regroupées en variables en haut
 app.js              la logique, en 12 sections numérotées
 seances/
-  _commun.js        format d'une séance, échauffements réutilisables, planning par défaut
+  commun.js        format d'une séance, échauffements réutilisables, planning par défaut
   push-pull.js      une séance = un fichier
   pull-a.js
   jambes-abdos.js
@@ -33,7 +33,7 @@ TUTORIEL.md         explication du code, fichier par fichier
 4. Ajouter le même chemin dans la liste `FICHIERS` de `sw.js`, et incrémenter `VERSION`.
 
 Le format complet d'une séance est documenté en commentaire en haut de
-`seances/_commun.js`.
+`seances/commun.js`.
 
 ## Pourquoi des fichiers `.js` et pas du `.json`
 

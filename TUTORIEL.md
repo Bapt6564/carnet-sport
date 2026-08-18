@@ -47,7 +47,7 @@ Tout en bas, les scripts sont chargés dans l'ordre : les séances d'abord,
 séances existe déjà quand il démarre.
 
 > **Le point à comprendre :** plusieurs fichiers `.js` chargés dans une même page
-> partagent leurs variables. `const SEANCES` écrit dans `_commun.js` est
+> partagent leurs variables. `const SEANCES` écrit dans `commun.js` est
 > directement visible depuis `app.js`, comme si tout était dans un seul fichier.
 > C'est pour ça qu'aucun `import` n'apparaît nulle part.
 
@@ -80,7 +80,7 @@ Trois blocs à repérer plus bas :
 
 ---
 
-## 3. `seances/_commun.js` — le format d'une séance
+## 3. `seances/commun.js` — le format d'une séance
 
 À lire en premier quand tu veux ajouter un entraînement. Le fichier contient :
 
