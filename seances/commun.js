@@ -26,7 +26,6 @@
      type: "reps",                 // "reps" (on compte) ou "temps" (on chronomètre)
      objectif: 12,                 // un nombre, ou "MAX" pour les séries à l'échec
      parCote: true,                // facultatif : l'objectif s'entend par côté
-     programme: "A",               // facultatif : exercice réservé au programme A ou B
      note: "Variante : ..."        // facultatif : consigne affichée sous le nom
    }
    ========================================================================== */
@@ -60,7 +59,7 @@ const ECHAUFFEMENT_BAS = {
     { nom:"Montées de mollets",    type:"temps", objectif:25 },
     { nom:"Montées d'orteils",     type:"temps", objectif:25 },
     { nom:"Squats",                type:"reps",  objectif:10 },
-    { nom:"Fentes cosaques",       type:"temps", objectif:12 , parCote=true},
+    { nom:"Fentes cosaques",       type:"temps", objectif:12 , parCote:true},
     { nom:"Fentes alternées",      type:"temps", objectif:12 },
     { nom:"Montées de genoux",     type:"temps", objectif:25, note:"Allongé sur le dos" }
   ]

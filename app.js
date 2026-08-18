@@ -32,7 +32,7 @@ let poids      = [];   // { date:"2026-08-17", valeur:72.4 }
 let planning   = {};   // { 1:"push-pull", ... }
 let active     = null;  // séance en cours (voir démarrerSeance)
 let objectifs  = {};   // objectifs relevés par la progression auto : { "Pompes diamant": 17 }
-let reglages   = { programme:"A", gistToken:"", gistId:"" };
+let reglages   = { gistToken:"", gistId:"" };
 
 
 /* ==========================================================================
@@ -148,11 +148,6 @@ function rendrePlanning(){
       </div>`;
   }).join("");
 
-  // Programme A ou B (les circuits du livre se déclinent en deux versions)
-  $("#choix-programme").innerHTML = ["A","B"].map(v => `
-    <div><button class="btn large${reglages.programme===v?" plein":""}" data-action="programme" data-v="${v}">Programme ${v}</button></div>`
-  ).join("");
-
   // Proposition de reprise si une séance a été interrompue
   $("#reprise").innerHTML = active ? `
     <div class="carte" style="margin-top:16px; border-color:var(--acier)">
@@ -236,11 +231,10 @@ function dernierePerfValeurs(nomExo){
       On "aplatit" la séance en une simple liste de séries à faire,
       dans l'ordre. C'est ce qui rend le reste du code très court.
    ========================================================================== */
-function construireSeries(seance, programme){
+function construireSeries(seance){
   const liste = [];
   seance.blocs.forEach((bloc, ib) => {
-    // On ne garde que les exercices du programme choisi (ceux sans mention sont communs)
-    const exos = bloc.exercices.filter(e => !e.programme || e.programme === programme);
+    const exos = bloc.exercices;
     for (let tour = 1; tour <= bloc.tours; tour++){
       exos.forEach((exo, ie) => {
         liste.push({
@@ -259,8 +253,8 @@ async function demarrerSeance(id){
   const s = seanceParId(id);
   if (!s) return;
   active = { seanceId:s.id, nom:s.nom, chaud:!!s.chaud, debut:Date.now(),
-             programme:reglages.programme, ressenti:null,
-             index:0, series:construireSeries(s, reglages.programme) };
+             ressenti:null,
+             index:0, series:construireSeries(s) };
   await Store.ecrire(CLE.active, active);
   garderEcranAllume();
   naviguer("seance");
@@ -433,7 +427,6 @@ async function enregistrerSeance(){
       id: Date.now(),
       seanceId: active.seanceId,
       nom: active.nom,
-      programme: active.programme,
       ressenti: active.ressenti,
       note: ($("#champ-note") ? $("#champ-note").value : "") || "",
       date: new Date().toISOString(),
@@ -708,10 +701,10 @@ function exporter(){
 
 /** Export CSV : une ligne par série, pour analyser dans Python. */
 function exporterCSV(){
-  const lignes = ["date;seance;programme;bloc;tour;exercice;type;valeur;lest;ressenti"];
+  const lignes = ["date;seance;bloc;tour;exercice;type;valeur;lest;ressenti"];
   historique.forEach(h => h.series.forEach(s => {
     lignes.push([
-      h.date, h.nom, h.programme || "", s.bloc, s.tour, s.exo, s.type,
+      h.date, h.nom, s.bloc, s.tour, s.exo, s.type,
       s.valeur, s.poids === null || s.poids === undefined ? "" : s.poids, h.ressenti || ""
     ].join(";"));
   }));
@@ -837,11 +830,6 @@ document.addEventListener("click", async (ev) => {
   else if (a === "courbe-exo")     { courbeExercice(el.dataset.exo); }
   else if (a === "gist-envoyer")   { gistEnvoyer(); }
   else if (a === "gist-recuperer") { gistRecuperer(); }
-  else if (a === "programme")      {
-    reglages.programme = el.dataset.v;
-    await Store.ecrire(CLE.reg, reglages);
-    rendrePlanning();
-  }
   else if (a === "importer")       { $("#fichier-import").click(); }
 });
 
@@ -878,7 +866,7 @@ document.addEventListener("visibilitychange", () => {
   planning   = await Store.lire(CLE.plan, PLANNING_DEFAUT);
   active     = await Store.lire(CLE.active, null);
   objectifs  = await Store.lire(CLE.obj, {});
-  reglages   = Object.assign({ programme:"A", gistToken:"", gistId:"" }, await Store.lire(CLE.reg, {}));
+  reglages   = Object.assign({ gistToken:"", gistId:"" }, await Store.lire(CLE.reg, {}));
 
   $("#champ-gist-id").value    = reglages.gistId;
   $("#champ-gist-token").value = reglages.gistToken;

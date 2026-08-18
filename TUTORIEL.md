@@ -93,7 +93,7 @@ plusieurs tours, un tour parcourt une liste d'exercices.**
 
 `type` vaut `"reps"` (tu comptes) ou `"temps"` (l'app chronomètre). `objectif`
 est un nombre, ou `"MAX"` pour une série à l'échec. Les champs facultatifs :
-`parCote`, `programme` (`"A"` ou `"B"`), `note`.
+`parCote`, `note`.
 
 ---
 
