@@ -1,26 +1,18 @@
 # Tutoriel — comprendre le code, fichier par fichier
 
-L'app tient en trois fichiers de code plus un dossier de données. Aucun outil à
-installer, aucune bibliothèque : le navigateur lit directement ce que tu écris.
+L'app tient en trois fichiers de code plus un dossier de données.
 
 ```
-index.html          ce qu'on voit          (structure)
-style.css           à quoi ça ressemble    (apparence)
-app.js              ce qui se passe        (comportement)
-seances/*.js        tes entraînements      (données)
+index.html          structure
+style.css           apparence
+app.js              comportement
+seances/*.js        données
 ```
 
-Cette séparation est la seule règle d'organisation du projet. Quand tu ne sais
-pas où intervenir, pose-toi la question : c'est un élément affiché à l'écran
-(→ HTML), une couleur ou une taille (→ CSS), une règle de fonctionnement
-(→ JS), ou le contenu d'une séance (→ `seances/`) ?
-
----
 
 ## 1. `index.html` — le squelette
 
-Le fichier ne contient aucun contenu d'entraînement : uniquement des **boîtes
-vides** que le JavaScript remplira.
+Le fichier ne contient aucun contenu d'entraînement : uniquement des **boîtes vides** que le JavaScript remplira.
 
 ```html
 <section id="vue-planning" class="vue active">

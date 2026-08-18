@@ -37,19 +37,19 @@ const SEANCES = [];
 function ajouterSeance(seance){ SEANCES.push(seance); }
 
 /* Deux échauffements réutilisables : on les glisse dans les séances
-   avec la syntaxe ...ECHAUFFEMENT_HAUT (voir plus bas). */
+   avec la syntaxe ...ECHAUFFEMENT_HAUT */
 const ECHAUFFEMENT_HAUT = {
-  nom: "Échauffement · haut du corps",
+  nom: "Échauffement haut du corps · 5 minutes",
   tours: 1, pauseExos: 0, pauseTours: 0,
   exercices: [
-    { nom:"Moulinets poignets",    type:"reps", objectif:15, note:"Dans les deux sens" },
+    { nom:"Moulinets poignets",    type:"reps", objectif:15, note:"Avant-bras fixes, dans les deux sens" },
     { nom:"Moulinets coudes",      type:"reps", objectif:15, note:"Coudes fixes, dans les deux sens" },
     { nom:"Moulinets épaules",     type:"reps", objectif:15, note:"Avant puis arrière" },
-    { nom:"Torsions de buste",     type:"reps", objectif:15, parCote:true },
-    { nom:"Poignets au sol",       type:"reps", objectif:5,  note:"5 balancements par angle : avant, intérieur, extérieur" },
-    { nom:"Exercice pull facile",  type:"reps", objectif:12, note:"Tractions australiennes hautes, par exemple" },
-    { nom:"Exercice push facile",  type:"reps", objectif:18, note:"Pompes surélevées ou à genoux" },
-    { nom:"Exercice abdos",        type:"temps",objectif:30, note:"Gainage, bateau ou montées de jambes selon la figure travaillée" }
+    { nom:"Torsions de buste",     type:"reps", objectif:15, parCote:true, note:"Hanches fixes" },
+    { nom:"Flexions de poignets",  type:"reps", objectif:5,  note:"A genoux, sur plusieurs angles : avant, intérieur, extérieur" },
+    { nom:"Exercice pull facile",  type:"reps", objectif:10, note:"Exemple : tractions australiennes hautes" },
+    { nom:"Exercice push facile",  type:"reps", objectif:15, note:"Exemple : pompes surélevées ou à genoux" },
+    { nom:"Exercice abdos",        type:"temps",objectif:30, note:"Gainage selon la suite" }
   ]
 };
 
@@ -58,10 +58,10 @@ const ECHAUFFEMENT_BAS = {
   tours: 1, pauseExos: 0, pauseTours: 0,
   exercices: [
     { nom:"Montées de mollets",    type:"temps", objectif:25 },
-    { nom:"Montées d'orteils",     type:"temps", objectif:25, note:"Dos au mur, talons près du mur" },
-    { nom:"Squats",                type:"temps", objectif:25 },
-    { nom:"Fentes cosaques",       type:"temps", objectif:25 },
-    { nom:"Fentes alternées",      type:"temps", objectif:25 },
+    { nom:"Montées d'orteils",     type:"temps", objectif:25 },
+    { nom:"Squats",                type:"reps",  objectif:10 },
+    { nom:"Fentes cosaques",       type:"temps", objectif:12 , parCote=true},
+    { nom:"Fentes alternées",      type:"temps", objectif:12 },
     { nom:"Montées de genoux",     type:"temps", objectif:25, note:"Allongé sur le dos" }
   ]
 };

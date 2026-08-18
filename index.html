@@ -28,7 +28,7 @@
       <p class="petit gris mono" id="date-jour"></p>
     </div>
     <div class="carte" style="padding:4px 0" id="liste-planning"></div>
-    <p class="petit gris" style="margin-top:10px">Choisis une séance pour chaque jour : le planning est enregistré sur ton téléphone.</p>
+    <p class="petit gris" style="margin-top:10px">Choix des séances : le planning est enregistré sur le téléphone.</p>
     <div class="ligne-champs" style="margin-top:14px" id="choix-programme"></div>
     <div id="reprise"></div>
   </div>
@@ -52,7 +52,7 @@
   <div class="page">
     <div class="entete">
       <div>
-        <p class="oeil">Ce que tu as fait</p>
+        <p class="oeil">Retour sur les séances</p>
         <h1>Historique</h1>
       </div>
     </div>
@@ -71,7 +71,7 @@
     <button class="btn large" style="margin-top:10px" data-action="exporter-csv">Exporter CSV (pour Python)</button>
     <input type="file" id="fichier-import" accept="application/json" hidden>
 
-    <p class="oeil" style="margin:22px 0 8px">Sauvegarde en ligne — gist GitHub</p>
+    <p class="oeil" style="margin:22px 0 8px">Sauvegarde en ligne (gist GitHub)</p>
     <div class="carte">
       <label for="champ-gist-id">Identifiant du gist</label>
       <input id="champ-gist-id" type="text" placeholder="ex. 8f3c1a…" autocomplete="off">
@@ -81,7 +81,7 @@
         <div><button class="btn large" data-action="gist-envoyer">Envoyer</button></div>
         <div><button class="btn large" data-action="gist-recuperer">Récupérer</button></div>
       </div>
-      <p class="petit gris" style="margin-top:10px">Le jeton reste sur cet appareil. À n'utiliser que sur un téléphone qui t'appartient.</p>
+      <p class="petit gris" style="margin-top:10px">Le jeton reste sur cet appareil. Ne pas partager.</p>
     </div>
   </div>
 </section>
@@ -158,11 +158,14 @@
 
 <!-- Les séances sont chargées avant l'application. -->
 <script src="seances/commun.js"></script>
+
+<script src="seances/technique-base.js"></script>
+<script src="seances/hiit.js"></script>
+
 <script src="seances/push-pull.js"></script>
 <script src="seances/pull-a.js"></script>
 <script src="seances/jambes-abdos.js"></script>
 <script src="seances/epaules.js"></script>
-<script src="seances/hiit.js"></script>
 <script src="seances/etirements.js"></script>
 
 <script src="app.js"></script>

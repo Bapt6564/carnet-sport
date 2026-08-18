@@ -1,11 +1,7 @@
 "use strict";
 
 /* ==========================================================================
-   2. STOCKAGE — où l'app garde tes données.
-      On essaie window.storage (l'aperçu dans Claude) puis localStorage
-      (navigateur normal, GitHub Pages...). Ainsi le même code marche des deux côtés.
-      Tout passe par Store.lire / Store.ecrire : le reste du code ignore lequel des
-      deux est utilisé.
+   2. STOCKAGE
    ========================================================================== */
 const Store = {
   async lire(cle, defaut){

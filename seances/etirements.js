@@ -6,13 +6,13 @@ ajouterSeance({
     blocs:[
       { nom:"Souplesse ciblée", tours:1, pauseExos:0, pauseTours:0,
         exercices:[
-          { nom:"Toucher ses pieds assis",         type:"reps",  objectif:4,  note:"3 s d'effort, 3 s de relâchement, 4 fois d'affilée" },
+          { nom:"Toucher ses pieds assis",         type:"reps",  objectif:4,  note:"3s d'effort, 3s de relâchement" },
           { nom:"Squat profond",                   type:"temps", objectif:30, note:"3 séries, 2 min de pause" },
           { nom:"Relâchement des fléchisseurs",    type:"temps", objectif:20, parCote:true },
           { nom:"Étirement des pectoraux",         type:"temps", objectif:10, parCote:true },
           { nom:"Étirement des dorsaux",           type:"temps", objectif:10 },
           { nom:"Étirement des obliques",          type:"temps", objectif:10, parCote:true },
-          { nom:"Étirement des abdos : la vache",  type:"temps", objectif:10 },
+          { nom:"Étirement des abdos",             type:"temps", objectif:10 },
           { nom:"Fente avec torsion",              type:"temps", objectif:10, parCote:true }
         ]}
     ]
