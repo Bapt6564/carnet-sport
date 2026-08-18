@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet — suivi d'entraînement</title>
+<meta name="theme-color" content="#12161c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ======================= LES 4 ONGLETS PRINCIPAUX ======================= -->
+
+<!-- ---------- PLANNING ---------- -->
+<section id="vue-planning" class="vue active">
+  <div class="page">
+    <div class="entete">
+      <div>
+        <p class="oeil">Semaine</p>
+        <h1>Planning</h1>
+      </div>
+      <p class="petit gris mono" id="date-jour"></p>
+    </div>
+    <div class="carte" style="padding:4px 0" id="liste-planning"></div>
+    <p class="petit gris" style="margin-top:10px">Choisis une séance pour chaque jour : le planning est enregistré sur ton téléphone.</p>
+    <div class="ligne-champs" style="margin-top:14px" id="choix-programme"></div>
+    <div id="reprise"></div>
+  </div>
+</section>
+
+<!-- ---------- SÉANCES ---------- -->
+<section id="vue-seances" class="vue">
+  <div class="page">
+    <div class="entete">
+      <div>
+        <p class="oeil">Bibliothèque</p>
+        <h1>Séances</h1>
+      </div>
+    </div>
+    <div id="liste-seances"></div>
+  </div>
+</section>
+
+<!-- ---------- HISTORIQUE ---------- -->
+<section id="vue-historique" class="vue">
+  <div class="page">
+    <div class="entete">
+      <div>
+        <p class="oeil">Ce que tu as fait</p>
+        <h1>Historique</h1>
+      </div>
+    </div>
+    <div class="stat" id="stats"></div>
+    <div id="alerte"></div>
+    <div id="liste-historique"></div>
+    <hr>
+    <p class="oeil" style="margin-bottom:8px">Records</p>
+    <div id="records"></div>
+    <hr>
+    <p class="oeil" style="margin-bottom:8px">Sauvegarde</p>
+    <div class="ligne-champs">
+      <div><button class="btn large" data-action="exporter">Exporter JSON</button></div>
+      <div><button class="btn large" data-action="importer">Importer JSON</button></div>
+    </div>
+    <button class="btn large" style="margin-top:10px" data-action="exporter-csv">Exporter CSV (pour Python)</button>
+    <input type="file" id="fichier-import" accept="application/json" hidden>
+
+    <p class="oeil" style="margin:22px 0 8px">Sauvegarde en ligne — gist GitHub</p>
+    <div class="carte">
+      <label for="champ-gist-id">Identifiant du gist</label>
+      <input id="champ-gist-id" type="text" placeholder="ex. 8f3c1a…" autocomplete="off">
+      <label for="champ-gist-token" style="margin-top:10px">Jeton GitHub (permission « gist »)</label>
+      <input id="champ-gist-token" type="password" placeholder="ghp_…" autocomplete="off">
+      <div class="ligne-champs" style="margin-top:12px">
+        <div><button class="btn large" data-action="gist-envoyer">Envoyer</button></div>
+        <div><button class="btn large" data-action="gist-recuperer">Récupérer</button></div>
+      </div>
+      <p class="petit gris" style="margin-top:10px">Le jeton reste sur cet appareil. À n'utiliser que sur un téléphone qui t'appartient.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- POIDS ---------- -->
+<section id="vue-poids" class="vue">
+  <div class="page">
+    <div class="entete">
+      <div>
+        <p class="oeil">Suivi</p>
+        <h1>Poids</h1>
+      </div>
+    </div>
+    <div class="carte">
+      <div class="ligne-champs" style="align-items:flex-end">
+        <div>
+          <label for="champ-poids">Poids (kg)</label>
+          <input id="champ-poids" class="mono" type="number" step="0.1" inputmode="decimal" placeholder="72.4">
+        </div>
+        <div>
+          <label for="champ-date-poids">Date</label>
+          <input id="champ-date-poids" type="date">
+        </div>
+      </div>
+      <button class="btn plein large" style="margin-top:12px" data-action="ajouter-poids">Enregistrer</button>
+    </div>
+    <div class="carte" id="carte-courbe"></div>
+    <div id="liste-poids"></div>
+  </div>
+</section>
+
+<!-- ---------- SÉANCE EN DIRECT (plein écran, hors onglets) ---------- -->
+<section id="vue-seance" class="vue">
+  <div class="barre-seance">
+    <div>
+      <p class="oeil" id="seance-nom">—</p>
+      <p class="mono" id="seance-chrono" style="font-size:20px">0:00</p>
+    </div>
+    <button class="btn" data-action="terminer-seance">Terminer</button>
+  </div>
+  <div class="page" id="seance-corps"></div>
+</section>
+
+<!-- ---------- SUPERPOSITION DE REPOS ---------- -->
+<div id="repos">
+  <p class="oeil" id="repos-titre">Repos entre exercices</p>
+  <p class="compte mono" id="repos-compte">0:00</p>
+  <p class="petit gris" id="repos-suite">—</p>
+  <div class="actions">
+    <button class="btn" data-action="repos-plus">+30 s</button>
+    <button class="btn plein" data-action="repos-passer">Passer</button>
+  </div>
+</div>
+
+<!-- ---------- BARRE D'ONGLETS ---------- -->
+<nav id="onglets">
+  <button data-vue="planning" class="actif">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    Planning
+  </button>
+  <button data-vue="seances">
+    <svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg>
+    Séances
+  </button>
+  <button data-vue="historique">
+    <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4M12 8v4l3 2"/></svg>
+    Historique
+  </button>
+  <button data-vue="poids">
+    <svg viewBox="0 0 24 24"><path d="M4 19l5-8 4 4 7-10"/><path d="M4 19h16"/></svg>
+    Poids
+  </button>
+</nav>
+
+<!-- Les séances sont chargées avant l'application. -->
+<script src="seances/_commun.js"></script>
+<script src="seances/push-pull.js"></script>
+<script src="seances/pull-a.js"></script>
+<script src="seances/jambes-abdos.js"></script>
+<script src="seances/epaules.js"></script>
+<script src="seances/hiit.js"></script>
+<script src="seances/etirements.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
