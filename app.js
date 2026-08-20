@@ -257,7 +257,8 @@ let filtreLieu = "";
 
 function rendreSeances(){
   const filtres = LIEUX.map(([id, nom]) => `
-    <button class="btn${filtreLieu===id?" plein":""}" data-action="filtre-lieu" data-v="${id}">${nom}</button>`).join("");
+    <button class="btn ${id ? themeLieu(id) : ""}${filtreLieu===id?" plein":""}"
+            data-action="filtre-lieu" data-v="${id}">${nom}</button>`).join("");
 
   const visibles = SEANCES.filter(s => !filtreLieu || s.lieu === filtreLieu);
 
@@ -267,10 +268,10 @@ function rendreSeances(){
     const nbExos = s.blocs.reduce((n,b) => n + b.exercices.length, 0);
     const nbSeries = s.blocs.reduce((n,b) => n + b.exercices.length * b.tours, 0);
     return `
-      <div class="carte cliquable ${themeLieu(s.lieu)}" data-action="ouvrir-seance" data-id="${s.id}">
+      <div class="carte cliquable bord-lieu ${themeLieu(s.lieu)}" data-action="ouvrir-seance" data-id="${s.id}">
         <h2>${txt(s.nom)}</h2>
         <p class="petit gris" style="margin-top:2px">${txt(s.sousTitre||"")}</p>
-        <p class="petit mono" style="margin-top:10px; color:var(--acier)">
+        <p class="petit mono" style="margin-top:10px; color:var(--accent)">
           ${s.lieu ? txt(s.lieu) + " · " : ""}~${Math.round(dureeEstimee(s)/60)} min · ${nbExos} exercices · ${nbSeries} séries
         </p>
       </div>`;
@@ -297,9 +298,9 @@ function ouvrirSeance(id){
     <button class="btn" style="margin-bottom:14px" data-action="retour-seances">← Toutes les séances</button>
     <h2>${txt(s.nom)}</h2>
     <p class="petit gris">${txt(s.sousTitre||"")}</p>
-    <p class="petit mono" style="margin-top:8px; color:var(--acier)">Durée estimée : ~${Math.round(dureeEstimee(s)/60)} min</p>
+    <p class="petit mono" style="margin-top:8px; color:var(--accent)">Durée estimée : ~${Math.round(dureeEstimee(s)/60)} min</p>
     ${s.materiel && s.materiel.length
-      ? `<p class="petit mono" style="margin-top:2px; color:var(--acier)">Matériel : ${txt(s.materiel.join(", "))}</p>` : ""}
+      ? `<p class="petit mono" style="margin-top:2px; color:var(--accent)">Matériel : ${txt(s.materiel.join(", "))}</p>` : ""}
     ${blocs}
     <button class="btn plein large" style="margin-top:18px" data-action="demarrer" data-id="${s.id}">Démarrer la séance</button>
    </div>`;
@@ -750,7 +751,7 @@ function rendrePoids(){
   const points = poids.slice().sort((a,b) => a.date.localeCompare(b.date));
   $("#carte-courbe").innerHTML = points.length < 2
     ? `<p class="vide">Ajoute au moins deux mesures pour voir la courbe.</p>`
-    : courbeSVG(points);
+    : courbeSVG(points, "kg", "#a992e0");
 
   $("#liste-poids").innerHTML = points.length
     ? points.slice().reverse().map(p => `

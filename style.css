@@ -12,6 +12,7 @@
   --acier:     #7fb2e5;   /* bleu : séances à la maison */
   --orange:    #e2913f;   /* orange : séances en salle */
   --foret:     #5ba372;   /* vert forêt : course */
+  --lavande:   #a992e0;   /* lavande : suivi du poids */
   --brique:    #c8574a;   /* rouge : repos, suppressions, alertes */
 
   /* Couleur d'accent courante : le bleu par défaut. Les classes
@@ -29,6 +30,7 @@
 .theme-maison{ --accent: var(--acier); }
 .theme-salle { --accent: var(--orange); }
 .theme-course{ --accent: var(--foret); }
+.theme-poids { --accent: var(--lavande); }
 
 body{
   background:var(--fond);
@@ -71,6 +73,8 @@ h3{ font-size:18px; }
   border-radius:var(--r); padding:14px; margin-bottom:10px; overflow:hidden;
 }
 .carte.cliquable{ cursor:pointer; }
+/* Barre de couleur à gauche, selon le lieu de la séance */
+.carte.bord-lieu{ border-left:3px solid var(--accent); }
 .carte.cliquable:active{ background:var(--surface-2); }
 
 /* --- SIGNATURE : le chevron de dosage --------------------------------
@@ -122,6 +126,7 @@ label{ display:block; font-size:12px; color:var(--gris); margin-bottom:5px; lett
 }
 #onglets button.actif{ color:var(--accent); border-top-color:var(--accent); }
 #onglets button[data-vue="course"].actif{ color:var(--foret); border-top-color:var(--foret); }
+#onglets button[data-vue="poids"].actif{ color:var(--lavande); border-top-color:var(--lavande); }
 #onglets svg{ width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.7; }
 
 /* --- Planning ----------------------------------------------------------- */
