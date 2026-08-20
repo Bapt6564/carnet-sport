@@ -1,6 +1,7 @@
 /* Séance : Travail technique de base
    Les six figures de fond, en circuit. */
 ajouterSeance({
+<<<<<<< HEAD
   id:"technique-base", nom:"Travail technique (base)", sousTitre:"Technique · tout le corps",
   lieu:"maison", materiel:["barre de traction", "barre de dips"], zone:"tout",
   blocs:[
@@ -31,4 +32,18 @@ ajouterSeance({
           detail:"En appui bras tendus, épaules basses, monte les jambes tendues jusqu'à former un angle de 90° avec le buste.\nEngage les abdominaux et garde les pointes de pieds tendues.\nDébutant : au sol, décolle le bassin avec les jambes pliées (tuck)." }
       ]}
   ]
+=======
+    id:"technique-base", nom:"Travail technique (base)", sousTitre:"Technique", zone:"tout le corps",
+    blocs:[
+      { nom:"Circuits", tours:4, pauseExos:30, pauseTours:120,
+        exercices:[
+          { nom:"Tractions",    type:"reps",  objectif:10,  note:"Débutant : tractions assistées" },
+          { nom:"Pompes",       type:"reps",  objectif:20,  note:"Débutant : à genoux" },
+          { nom:"Pistol squats",type:"reps",  objectif:5,   parCote:true,  note:"Avec un minimum d'assistance" },
+          { nom:"Gainage",      type:"temps", objectif:60,  note:"Débutant : à genoux ou pieds écartés" },
+          { nom:"Dips",         type:"reps",  objectif:10,  note:"Débutant : sur support jambes tendues" },
+          { nom:"L-sit",        type:"temps", objectif:10,  note:"Débutant : se soulever, au sol, jambes pliées" }
+        ]}
+    ]
+>>>>>>> 414a6b105edce97e992ed3463f67580ce78311ef
 });

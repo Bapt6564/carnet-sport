@@ -32,14 +32,8 @@
      type: "reps",                 // "reps" (on compte) ou "temps" (on chronomètre)
      objectif: 12,                 // un nombre, ou "MAX" pour les séries à l'échec
      parCote: true,                // facultatif : l'objectif s'entend par côté
-     charge: true,                 // facultatif : le champ kg devient "Charge" au lieu de "Lest"
-     secParRep: 1,                 // facultatif : secondes par répétition (3 par défaut),
-                                   //   sert uniquement au calcul de la durée estimée
-     note: "Variante : ..."        // facultatif : texte COURT, sur la fiche de la séance
-     detail: "Consignes...\nEt variantes"  // facultatif : texte LONG, affiché
-                                   //   pendant l'exercice, en séance. Les \n
-                                   //   font des retours à la ligne.
-                                   //   Sans detail, c'est note qui est repris.
+     programme: "A",               // facultatif : exercice réservé au programme A ou B
+     note: "Variante : ..."        // facultatif : consigne affichée sous le nom
    }
    ========================================================================== */
 
@@ -72,7 +66,7 @@ const ECHAUFFEMENT_BAS = {
     { nom:"Montées de mollets",    type:"temps", objectif:25 },
     { nom:"Montées d'orteils",     type:"temps", objectif:25 },
     { nom:"Squats",                type:"reps",  objectif:10 },
-    { nom:"Fentes cosaques",       type:"temps", objectif:12, parCote:true },
+    { nom:"Fentes cosaques",       type:"temps", objectif:12 , parCote=true},
     { nom:"Fentes alternées",      type:"temps", objectif:12 },
     { nom:"Montées de genoux",     type:"temps", objectif:25, note:"Allongé sur le dos" }
   ]

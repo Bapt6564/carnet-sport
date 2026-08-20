@@ -3,7 +3,11 @@
    DEUX CHOSES À FAIRE APRÈS CHAQUE MODIFICATION :
    1. incrémenter VERSION ci-dessous, sinon le téléphone garde l'ancienne version ;
    2. ajouter tout nouveau fichier de séance à la liste FICHIERS. */
+<<<<<<< HEAD
 const VERSION = "carnet-v12";
+=======
+const VERSION = "carnet-v5";
+>>>>>>> 414a6b105edce97e992ed3463f67580ce78311ef
 
 const FICHIERS = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json", "./icone.svg",
