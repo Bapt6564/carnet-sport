@@ -3,17 +3,20 @@
    DEUX CHOSES À FAIRE APRÈS CHAQUE MODIFICATION :
    1. incrémenter VERSION ci-dessous, sinon le téléphone garde l'ancienne version ;
    2. ajouter tout nouveau fichier de séance à la liste FICHIERS. */
-const VERSION = "carnet-v4";
+const VERSION = "carnet-v12";
 
 const FICHIERS = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json", "./icone.svg",
   "./seances/commun.js",
+  "./seances/technique-base.js",
   "./seances/push-pull.js",
   "./seances/pull-a.js",
   "./seances/jambes-abdos.js",
   "./seances/epaules.js",
   "./seances/hiit.js",
-  "./seances/etirements.js"
+  "./seances/etirements.js",
+  "./seances/salle-haut.js",
+  "./seances/salle-jambes.js"
 ];
 
 self.addEventListener("install", (e) => {

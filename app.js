@@ -23,8 +23,11 @@ const Store = {
   }
 };
 
-const CLE = { hist:"entr:historique", poids:"entr:poids", plan:"entr:planning",
-               active:"entr:seance-active", obj:"entr:objectifs", reg:"entr:reglages" };
+/* Chaque profil a ses propres données : ses clés de stockage portent son nom.
+   cle("historique") vaut par exemple "entr:moi:historique". */
+const CLE_PROFILS = "entr:profils";        // la liste des profils
+const CLE_ACTIF   = "entr:profil-actif";   // le profil en cours
+function cle(nom){ return "entr:" + profil + ":" + nom; }
 
 /* L'état de l'app, chargé au démarrage. */
 let historique = [];   // séances terminées
@@ -32,7 +35,10 @@ let poids      = [];   // { date:"2026-08-17", valeur:72.4 }
 let planning   = {};   // { 1:"push-pull", ... }
 let active     = null;  // séance en cours (voir démarrerSeance)
 let objectifs  = {};   // objectifs relevés par la progression auto : { "Pompes diamant": 17 }
-let reglages   = { programme:"A", gistToken:"", gistId:"" };
+let reglages   = { gistToken:"", gistId:"" };
+let courses    = [];   // sorties de course : { date, distance, duree, inclinaison, lieu, note }
+let profil     = "moi";       // profil en cours
+let profils    = ["moi"];     // tous les profils connus
 
 
 /* ==========================================================================
@@ -61,8 +67,36 @@ function aujourdhuiISO(){
   return d.getFullYear() + "-" + mois + "-" + jour;
 }
 function seanceParId(id){ return SEANCES.find(s => s.id === id) || null; }
+
+/** Les séances prévues un jour donné, toujours sous forme de liste.
+    (Les anciens plannings enregistraient une seule séance : on les accepte aussi.) */
+function seancesDuJour(j){
+  const v = planning[j];
+  if (!v) return [];
+  return Array.isArray(v) ? v.slice() : [v];
+}
 /** Échappe le texte avant de l'injecter en HTML (sécurité + accents cassés). */
 function txt(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/** Durée approximative d'une séance, en secondes.
+    On compte le temps de chaque exercice (sa durée s'il est chronométré,
+    environ 3 s par répétition sinon) plus toutes les pauses. */
+function dureeEstimee(seance){
+  let total = 0;
+  seance.blocs.forEach(bloc => {
+    let unTour = 0;
+    bloc.exercices.forEach(exo => {
+      const obj = objectifEffectif(exo);
+      const secParRep = exo.secParRep || 3;   // 3 s par répétition par défaut
+      let t = (exo.type === "temps") ? obj : (obj === "MAX" ? 30 : obj * secParRep);
+      if (exo.parCote) t *= 2;
+      unTour += t + 10;                       // 10 s pour se replacer et noter la série
+    });
+    unTour += bloc.pauseExos * Math.max(0, bloc.exercices.length - 1);
+    total += bloc.tours * unTour + bloc.pauseTours * Math.max(0, bloc.tours - 1);
+  });
+  return total;
+}
 
 /** Objectif du jour : celui du catalogue, sauf si la progression auto l'a relevé. */
 function objectifEffectif(exo){
@@ -84,10 +118,13 @@ function dosage(exo){
   const haut = obj === "MAX" ? "MAX" : "x"+obj;
   return { haut, bas:"rép" + (exo.parCote?" /côté":"") };
 }
-function htmlDose(exo, chaud){
+function htmlDose(exo){
   const d = dosage(exo);
-  return `<div class="dose${chaud?" chaud":""}"><b>${txt(d.haut)}</b><span>${txt(d.bas)}</span></div>`;
+  return `<div class="dose"><b>${txt(d.haut)}</b><span>${txt(d.bas)}</span></div>`;
 }
+
+/** Classe de couleur selon le lieu : bleu à la maison, orange en salle. */
+function themeLieu(lieu){ return lieu === "salle" ? "theme-salle" : "theme-maison"; }
 
 /* --- Retours physiques : son, vibration, écran allumé ------------------- */
 let audioCtx = null;
@@ -126,6 +163,47 @@ function naviguer(nom){
 
 
 /* ==========================================================================
+   4 bis. LES PROFILS — chacun ses séances, son historique, son poids.
+   ========================================================================== */
+function rendreProfils(){
+  $("#profils").innerHTML = profils.map(nom => `
+    <button class="btn${nom===profil?" plein":""}" data-action="profil" data-v="${txt(nom)}">${txt(nom)}</button>`
+  ).join("") + `<button class="btn" data-action="nouveau-profil">+</button>`;
+}
+
+/** Recharge toutes les données du profil courant et rafraîchit l'affichage. */
+async function chargerProfil(){
+  historique = await Store.lire(cle("historique"), []);
+  poids      = await Store.lire(cle("poids"), []);
+  courses    = await Store.lire(cle("courses"), []);
+  planning   = await Store.lire(cle("planning"), PLANNING_DEFAUT);
+  active     = await Store.lire(cle("seance-active"), null);
+  objectifs  = await Store.lire(cle("objectifs"), {});
+  reglages   = Object.assign({ gistToken:"", gistId:"" }, await Store.lire(cle("reglages"), {}));
+
+  $("#champ-gist-id").value    = reglages.gistId;
+  $("#champ-gist-token").value = reglages.gistToken;
+
+  rendreProfils(); rendrePlanning(); rendreSeances(); rendreHistorique(); rendrePoids(); rendreCourse();
+}
+
+async function changerProfil(nom){
+  profil = nom;
+  await Store.ecrire(CLE_ACTIF, profil);
+  await chargerProfil();
+  naviguer("planning");
+}
+
+async function nouveauProfil(){
+  const nom = (prompt("Nom du profil (ex. Baptiste, ou un prénom)") || "").trim();
+  if (!nom) return;
+  if (profils.includes(nom)) return changerProfil(nom);
+  profils.push(nom);
+  await Store.ecrire(CLE_PROFILS, profils);
+  await changerProfil(nom);
+}
+
+/* ==========================================================================
    5. VUE PLANNING
    ========================================================================== */
 function rendrePlanning(){
@@ -135,23 +213,27 @@ function rendrePlanning(){
   // Les jours affichés du lundi au dimanche
   const ordre = [1,2,3,4,5,6,0];
   $("#liste-planning").innerHTML = ordre.map(j => {
-    const id = planning[j];
-    const s  = seanceParId(id);
-    const options = ['<option value="">Repos</option>'].concat(
-      SEANCES.map(x => `<option value="${x.id}"${x.id===id?" selected":""}>${txt(x.nom)}</option>`)
-    ).join("");
+    const ids = seancesDuJour(j);
+    // Une ligne par séance prévue, plus une ligne vide pour en ajouter une autre
+    const lignes = ids.concat([""]).map((id, i) => {
+      const premiere = ['<option value="">' + (i < ids.length ? "— retirer —" : "+ ajouter") + "</option>"];
+      const options = premiere.concat(
+        SEANCES.map(x => `<option value="${x.id}"${x.id===id?" selected":""}>${txt(x.nom)}</option>`)
+      ).join("");
+      const s = seanceParId(id);
+      return `
+        <div class="${s ? themeLieu(s.lieu) : ""}" style="display:flex; gap:8px; align-items:center; margin:3px 0">
+          ${s ? `<i class="puce"></i>` : ""}
+          <select data-jour="${j}" data-i="${i}">${options}</select>
+          ${id ? `<button class="btn plein" data-action="demarrer" data-id="${id}">Go</button>` : ""}
+        </div>`;
+    }).join("");
     return `
       <div class="jour${j===auj?" aujourdhui":""}">
         <span class="nom-jour">${JOURS[j]}</span>
-        <div class="contenu"><select data-jour="${j}">${options}</select></div>
-        ${s ? `<button class="btn plein" data-action="demarrer" data-id="${s.id}">Go</button>` : ""}
+        <div class="contenu">${lignes}</div>
       </div>`;
   }).join("");
-
-  // Programme A ou B (les circuits du livre se déclinent en deux versions)
-  $("#choix-programme").innerHTML = ["A","B"].map(v => `
-    <div><button class="btn large${reglages.programme===v?" plein":""}" data-action="programme" data-v="${v}">Programme ${v}</button></div>`
-  ).join("");
 
   // Proposition de reprise si une séance a été interrompue
   $("#reprise").innerHTML = active ? `
@@ -169,16 +251,27 @@ function rendrePlanning(){
 /* ==========================================================================
    6. VUE SÉANCES (la bibliothèque)
    ========================================================================== */
+/* Les lieux servent à filtrer la bibliothèque. "" = pas de filtre. */
+const LIEUX = [["","Tout"], ["maison","Maison"], ["salle","Salle"]];
+let filtreLieu = "";
+
 function rendreSeances(){
-  $("#liste-seances").innerHTML = SEANCES.map(s => {
+  const filtres = LIEUX.map(([id, nom]) => `
+    <button class="btn${filtreLieu===id?" plein":""}" data-action="filtre-lieu" data-v="${id}">${nom}</button>`).join("");
+
+  const visibles = SEANCES.filter(s => !filtreLieu || s.lieu === filtreLieu);
+
+  $("#liste-seances").innerHTML = `<div class="ligne-champs" style="margin-bottom:14px">${filtres}</div>` +
+    (visibles.length ? "" : `<p class="vide">Aucune séance pour ce lieu.</p>`) +
+    visibles.map(s => {
     const nbExos = s.blocs.reduce((n,b) => n + b.exercices.length, 0);
     const nbSeries = s.blocs.reduce((n,b) => n + b.exercices.length * b.tours, 0);
     return `
-      <div class="carte cliquable" data-action="ouvrir-seance" data-id="${s.id}">
+      <div class="carte cliquable ${themeLieu(s.lieu)}" data-action="ouvrir-seance" data-id="${s.id}">
         <h2>${txt(s.nom)}</h2>
         <p class="petit gris" style="margin-top:2px">${txt(s.sousTitre||"")}</p>
         <p class="petit mono" style="margin-top:10px; color:var(--acier)">
-          ${s.blocs.length} blocs · ${nbExos} exercices · ${nbSeries} séries
+          ${s.lieu ? txt(s.lieu) + " · " : ""}~${Math.round(dureeEstimee(s)/60)} min · ${nbExos} exercices · ${nbSeries} séries
         </p>
       </div>`;
   }).join("");
@@ -193,18 +286,23 @@ function ouvrirSeance(id){
     ${b.exercices.map(e => `
       <div class="carte" style="padding-right:80px">
         <h3>${txt(e.nom)}</h3>
-        ${e.note ? `<p class="petit gris" style="margin-top:4px">${txt(e.note)}</p>` : ""}
+        ${e.note ? `<p class="petit gris note">${txt(e.note)}</p>` : ""}
         ${dernierePerfTexte(e.nom)}
-        ${htmlDose(e, s.chaud)}
+        ${htmlDose(e)}
       </div>`).join("")}
   `).join("");
 
   $("#liste-seances").innerHTML = `
+   <div class="${themeLieu(s.lieu)}">
     <button class="btn" style="margin-bottom:14px" data-action="retour-seances">← Toutes les séances</button>
     <h2>${txt(s.nom)}</h2>
     <p class="petit gris">${txt(s.sousTitre||"")}</p>
+    <p class="petit mono" style="margin-top:8px; color:var(--acier)">Durée estimée : ~${Math.round(dureeEstimee(s)/60)} min</p>
+    ${s.materiel && s.materiel.length
+      ? `<p class="petit mono" style="margin-top:2px; color:var(--acier)">Matériel : ${txt(s.materiel.join(", "))}</p>` : ""}
     ${blocs}
-    <button class="btn plein large" style="margin-top:18px" data-action="demarrer" data-id="${s.id}">Démarrer la séance</button>`;
+    <button class="btn plein large" style="margin-top:18px" data-action="demarrer" data-id="${s.id}">Démarrer la séance</button>
+   </div>`;
   window.scrollTo(0,0);
 }
 
@@ -236,11 +334,10 @@ function dernierePerfValeurs(nomExo){
       On "aplatit" la séance en une simple liste de séries à faire,
       dans l'ordre. C'est ce qui rend le reste du code très court.
    ========================================================================== */
-function construireSeries(seance, programme){
+function construireSeries(seance){
   const liste = [];
   seance.blocs.forEach((bloc, ib) => {
-    // On ne garde que les exercices du programme choisi (ceux sans mention sont communs)
-    const exos = bloc.exercices.filter(e => !e.programme || e.programme === programme);
+    const exos = bloc.exercices;
     for (let tour = 1; tour <= bloc.tours; tour++){
       exos.forEach((exo, ie) => {
         liste.push({
@@ -258,10 +355,10 @@ function construireSeries(seance, programme){
 async function demarrerSeance(id){
   const s = seanceParId(id);
   if (!s) return;
-  active = { seanceId:s.id, nom:s.nom, chaud:!!s.chaud, debut:Date.now(),
-             programme:reglages.programme, ressenti:null,
-             index:0, series:construireSeries(s, reglages.programme) };
-  await Store.ecrire(CLE.active, active);
+  active = { seanceId:s.id, nom:s.nom, lieu:s.lieu, debut:Date.now(),
+             ressenti:null,
+             index:0, series:construireSeries(s) };
+  await Store.ecrire(cle("seance-active"), active);
   garderEcranAllume();
   naviguer("seance");
   rendreSeanceActive();
@@ -279,6 +376,9 @@ function lancerChronoSeance(){
 
 function rendreSeanceActive(){
   if (!active) return;
+  // Toute la vue prend la couleur du lieu de la séance
+  $("#vue-seance").classList.remove("theme-maison", "theme-salle");
+  $("#vue-seance").classList.add(themeLieu(active.lieu));
   const serie = active.series[active.index];
   $("#seance-nom").textContent = active.nom;
 
@@ -315,8 +415,9 @@ function rendreSeanceActive(){
                  value="${obj === "MAX" ? "" : obj}" placeholder="0">
         </div>
         <div>
-          <label for="champ-poids-lest">Lest (kg, facultatif)</label>
-          <input id="champ-poids-lest" class="mono" type="number" step="0.5" inputmode="decimal" placeholder="—">
+          <label for="champ-poids-lest">${exo.charge ? "Charge (kg)" : "Lest (kg, facultatif)"}</label>
+          <input id="champ-poids-lest" class="mono" type="number" step="0.5" inputmode="decimal"
+                 value="${derniere && derniere.poids ? derniere.poids : ""}" placeholder="—">
         </div>
       </div>`;
 
@@ -326,10 +427,10 @@ function rendreSeanceActive(){
 
     <div class="carte exo-actuel" style="padding-right:80px">
       <h2>${txt(exo.nom)}</h2>
-      ${exo.note ? `<p class="petit gris" style="margin-top:4px">${txt(exo.note)}</p>` : ""}
+      ${(exo.detail || exo.note) ? `<p class="petit gris note">${txt(exo.detail || exo.note)}</p>` : ""}
       ${dernierePerfTexte(exo.nom)}
       <div class="pastilles">${pastilles}</div>
-      ${htmlDose(exo, active.chaud)}
+      ${htmlDose(exo)}
     </div>
 
     ${saisie}
@@ -366,7 +467,7 @@ async function validerSerie(){
   serie.poidsLest = lest && lest.value !== "" ? Number(lest.value) : null;
   serie.fait = true;
   active.index++;
-  await Store.ecrire(CLE.active, active);
+  await Store.ecrire(cle("seance-active"), active);
 
   arreterChronoExo();
   vibrer(30);
@@ -390,7 +491,7 @@ function corrigerSerie(i){
     const p = prompt("Lest en kg (laisse vide si aucun)", serie.poidsLest === null ? "" : serie.poidsLest);
     serie.poidsLest = (p === null || p === "") ? null : Number(p);
   }
-  Store.ecrire(CLE.active, active);
+  Store.ecrire(cle("seance-active"), active);
   rendreSeanceActive();
 }
 
@@ -398,7 +499,7 @@ function sauterSerie(){
   active.index++;
   arreterChronoExo();
   rendreSeanceActive();
-  Store.ecrire(CLE.active, active);
+  Store.ecrire(cle("seance-active"), active);
 }
 
 function rendreFinSeance(){
@@ -433,7 +534,6 @@ async function enregistrerSeance(){
       id: Date.now(),
       seanceId: active.seanceId,
       nom: active.nom,
-      programme: active.programme,
       ressenti: active.ressenti,
       note: ($("#champ-note") ? $("#champ-note").value : "") || "",
       date: new Date().toISOString(),
@@ -443,7 +543,7 @@ async function enregistrerSeance(){
         type:x.exo.type, valeur:x.valeur, poids:x.poidsLest
       }))
     });
-    await Store.ecrire(CLE.hist, historique);
+    await Store.ecrire(cle("historique"), historique);
     await verifierProgression(historique[historique.length - 1]);
   }
   await terminerEtQuitter();
@@ -471,12 +571,12 @@ async function verifierProgression(nouvelle){
       propositions++;
     }
   }
-  await Store.ecrire(CLE.obj, objectifs);
+  await Store.ecrire(cle("objectifs"), objectifs);
 }
 
 async function terminerEtQuitter(){
   active = null;
-  await Store.ecrire(CLE.active, null);
+  await Store.ecrire(cle("seance-active"), null);
   clearInterval(minuteurSeance);
   arreterChronoExo();
   libererEcran();
@@ -577,7 +677,11 @@ function alerteEquilibre(){
   if (!historique.length) return "";
   const messages = [];
   [["bas","les jambes"], ["haut","le haut du corps"]].forEach(([zone, libelle]) => {
-    const faites = historique.filter(h => { const s = seanceParId(h.seanceId); return s && s.zone === zone; });
+    // Une séance de zone "tout" compte pour le haut comme pour le bas
+    const faites = historique.filter(h => {
+      const s = seanceParId(h.seanceId);
+      return s && (s.zone === zone || s.zone === "tout");
+    });
     const derniere = faites[faites.length - 1];
     const jours = derniere ? Math.floor((Date.now() - new Date(derniere.date)) / JOUR) : null;
     if (jours === null) messages.push("Aucune séance pour " + libelle + " pour l'instant.");
@@ -659,7 +763,9 @@ function rendrePoids(){
 }
 
 /** Petite courbe dessinée à la main en SVG (pas de bibliothèque). */
-function courbeSVG(points){
+function courbeSVG(points, unite, couleur){
+  unite = unite || "kg";
+  couleur = couleur || "#7fb2e5";
   const L = 320, H = 150, m = 22;
   const vals = points.map(p => p.valeur);
   const min = Math.min(...vals) - .4, max = Math.max(...vals) + .4;
@@ -667,16 +773,16 @@ function courbeSVG(points){
   const y = v => H - m - (v - min) / (max - min) * (H - 2*m);
   const ligne = points.map((p,i) => `${i?"L":"M"}${x(i).toFixed(1)},${y(p.valeur).toFixed(1)}`).join(" ");
   const aire  = `${ligne} L${x(points.length-1).toFixed(1)},${H-m} L${x(0).toFixed(1)},${H-m} Z`;
-  const ronds = points.map((p,i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.valeur).toFixed(1)}" r="2.6" fill="#7fb2e5"/>`).join("");
+  const ronds = points.map((p,i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.valeur).toFixed(1)}" r="2.6" fill="${couleur}"/>`).join("");
   return `
     <svg class="courbe" viewBox="0 0 ${L} ${H}" preserveAspectRatio="none" aria-label="Courbe de poids">
-      <path d="${aire}" fill="rgba(127,178,229,.12)"/>
-      <path d="${ligne}" fill="none" stroke="#7fb2e5" stroke-width="2" stroke-linejoin="round"/>
+      <path d="${aire}" fill="${couleur}22"/>
+      <path d="${ligne}" fill="none" stroke="${couleur}" stroke-width="2" stroke-linejoin="round"/>
       ${ronds}
     </svg>
     <div style="display:flex; justify-content:space-between" class="petit gris mono">
       <span>${dateCourte(points[0].date)}</span>
-      <span>${min.toFixed(1)} – ${max.toFixed(1)} kg</span>
+      <span>${min.toFixed(1)} – ${max.toFixed(1)} ${unite}</span>
       <span>${dateCourte(points[points.length-1].date)}</span>
     </div>`;
 }
@@ -687,38 +793,116 @@ async function ajouterPoids(){
   if (!valeur) return;
   poids = poids.filter(p => p.date !== date);   // une seule mesure par jour
   poids.push({ date, valeur });
-  await Store.ecrire(CLE.poids, poids);
+  await Store.ecrire(cle("poids"), poids);
   $("#champ-poids").value = "";
   rendrePoids();
 }
 
 
 /* ==========================================================================
+   10 bis. VUE COURSE — suivi des sorties, sur tapis ou dehors.
+   ========================================================================== */
+
+/** Allure en minutes par kilomètre (le chiffre que suivent les coureurs). */
+function allure(course){
+  return course.distance > 0 ? (course.duree / 60) / course.distance : 0;
+}
+/** Allure affichée : 5.75 -> "5:45 /km" */
+function allureTexte(course){
+  const a = allure(course);
+  if (!a) return "—";
+  const min = Math.floor(a), sec = Math.round((a - min) * 60);
+  return min + ":" + String(sec).padStart(2, "0") + " /km";
+}
+function vitesse(course){
+  return course.duree > 0 ? course.distance / (course.duree / 3600) : 0;
+}
+/** Sur tapis, 1 % d'inclinaison sur 1 km fait 10 m de dénivelé. */
+function denivele(course){
+  return Math.round(course.distance * 1000 * (course.inclinaison || 0) / 100);
+}
+
+function rendreCourse(){
+  if (!$("#champ-course-date").value) $("#champ-course-date").value = aujourdhuiISO();
+
+  const tries = courses.slice().sort((a,b) => a.date.localeCompare(b.date));
+
+  // Statistiques : volume récent et meilleure allure
+  const recentes = tries.filter(c => Date.now() - new Date(c.date) < 7 * JOUR);
+  const kmSemaine = recentes.reduce((n,c) => n + c.distance, 0);
+  const kmTotal   = tries.reduce((n,c) => n + c.distance, 0);
+  const meilleure = tries.filter(c => c.distance >= 1)
+                         .sort((a,b) => allure(a) - allure(b))[0];
+  $("#course-stats").innerHTML = `
+    <div><b>${kmSemaine.toFixed(1)}</b><span>km / 7 j</span></div>
+    <div><b>${kmTotal.toFixed(0)}</b><span>km au total</span></div>
+    <div><b>${meilleure ? allureTexte(meilleure).replace(" /km","") : "—"}</b><span>Meilleure allure</span></div>`;
+
+  // Courbe d'allure : plus c'est bas, plus c'est rapide
+  const points = tries.filter(c => c.distance >= 1).map(c => ({ date:c.date, valeur:Number(allure(c).toFixed(2)) }));
+  $("#course-courbe").innerHTML = points.length < 2
+    ? `<p class="vide">Enregistre au moins deux sorties pour voir l'évolution de ton allure.</p>`
+    : `<p class="oeil" style="margin-bottom:6px">Allure — plus bas = plus rapide</p>` + courbeSVG(points, "min/km", "#5ba372");
+
+  // Liste des sorties, de la plus récente à la plus ancienne
+  $("#liste-courses").innerHTML = tries.slice().reverse().map(c => `
+    <div class="carte">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px">
+        <h3>${c.distance.toFixed(1)} km</h3>
+        <span class="petit mono gris">${dateCourte(c.date)} · ${txt(c.lieu || "tapis")}</span>
+      </div>
+      <p class="petit mono" style="margin-top:6px; color:var(--acier)">
+        ${mmss(c.duree)} · ${allureTexte(c)} · ${vitesse(c).toFixed(1)} km/h${c.inclinaison ? ` · ${c.inclinaison} % (${denivele(c)} m D+)` : ""}
+      </p>
+      ${c.note ? `<p class="petit gris note">${txt(c.note)}</p>` : ""}
+      <button class="btn danger petit" style="margin-top:8px" data-action="supprimer-course" data-id="${c.id}">Supprimer</button>
+    </div>`).join("") || `<p class="vide">Aucune sortie enregistrée.</p>`;
+}
+
+async function ajouterCourse(){
+  const distance = Number($("#champ-course-distance").value);
+  const duree    = Number($("#champ-course-min").value || 0) * 60 + Number($("#champ-course-sec").value || 0);
+  if (!distance || !duree) return alert("Il faut au moins une distance et une durée.");
+  courses.push({
+    id: Date.now(),
+    date: $("#champ-course-date").value || aujourdhuiISO(),
+    distance,
+    duree,
+    inclinaison: Number($("#champ-course-inclinaison").value || 0),
+    lieu: $("#champ-course-lieu").value,
+    note: $("#champ-course-note").value || ""
+  });
+  await Store.ecrire(cle("courses"), courses);
+  ["distance","min","sec","note"].forEach(n => { $("#champ-course-" + n).value = ""; });
+  rendreCourse();
+}
+
+/* ==========================================================================
    11. EXPORT / IMPORT (ta sauvegarde : à faire de temps en temps !)
    ========================================================================== */
 function exporter(){
-  const donnees = { version:1, historique, poids, planning, objectifs };
+  const donnees = { version:1, profil, historique, poids, courses, planning, objectifs };
   const blob = new Blob([JSON.stringify(donnees, null, 2)], { type:"application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "entrainement-" + aujourdhuiISO() + ".json";
+  a.download = "entrainement-" + profil + "-" + aujourdhuiISO() + ".json";
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
 /** Export CSV : une ligne par série, pour analyser dans Python. */
 function exporterCSV(){
-  const lignes = ["date;seance;programme;bloc;tour;exercice;type;valeur;lest;ressenti"];
+  const lignes = ["profil;date;seance;bloc;tour;exercice;type;valeur;lest;ressenti"];
   historique.forEach(h => h.series.forEach(s => {
     lignes.push([
-      h.date, h.nom, h.programme || "", s.bloc, s.tour, s.exo, s.type,
+      profil, h.date, h.nom, s.bloc, s.tour, s.exo, s.type,
       s.valeur, s.poids === null || s.poids === undefined ? "" : s.poids, h.ressenti || ""
     ].join(";"));
   }));
   const blob = new Blob(["\ufeff" + lignes.join("\n")], { type:"text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "series-" + aujourdhuiISO() + ".csv";
+  a.download = "series-" + profil + "-" + aujourdhuiISO() + ".csv";
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -733,7 +917,7 @@ async function gistEnvoyer(){
     const r = await fetch("https://api.github.com/gists/" + reglages.gistId, {
       method:"PATCH",
       headers:{ "Authorization":"Bearer " + reglages.gistToken, "Accept":"application/vnd.github+json" },
-      body: JSON.stringify({ files:{ "entrainement.json":{ content:JSON.stringify({ version:1, historique, poids, planning, objectifs }, null, 2) } } })
+      body: JSON.stringify({ files:{ "entrainement.json":{ content:JSON.stringify({ version:1, profil, historique, poids, courses, planning, objectifs }, null, 2) } } })
     });
     alert(r.ok ? "Sauvegarde envoyée." : "GitHub a refusé (" + r.status + "). Vérifie le jeton et l'identifiant.");
   }catch(e){ alert("Envoi impossible : pas de réseau ?"); }
@@ -750,11 +934,12 @@ async function gistRecuperer(){
     if (!fichier) return alert("Ce gist ne contient pas entrainement.json.");
     if (!confirm("Remplacer les données locales par celles du gist ?")) return;
     const d = JSON.parse(fichier.content);
-    historique = d.historique || []; poids = d.poids || [];
+    historique = d.historique || []; poids = d.poids || []; courses = d.courses || [];
     planning = d.planning || PLANNING_DEFAUT; objectifs = d.objectifs || {};
-    await Store.ecrire(CLE.hist, historique); await Store.ecrire(CLE.poids, poids);
-    await Store.ecrire(CLE.plan, planning);   await Store.ecrire(CLE.obj, objectifs);
-    rendrePlanning(); rendreHistorique(); rendrePoids();
+    await Store.ecrire(cle("historique"), historique); await Store.ecrire(cle("poids"), poids);
+    await Store.ecrire(cle("courses"), courses);
+    await Store.ecrire(cle("planning"), planning);   await Store.ecrire(cle("objectifs"), objectifs);
+    rendrePlanning(); rendreHistorique(); rendrePoids(); rendreCourse();
     alert("Données récupérées.");
   }catch(e){ alert("Récupération impossible."); }
 }
@@ -766,13 +951,15 @@ function importer(fichier){
       const d = JSON.parse(lecteur.result);
       historique = d.historique || [];
       poids      = d.poids || [];
+      courses    = d.courses || [];
+      await Store.ecrire(cle("courses"), courses);
       planning   = d.planning || PLANNING_DEFAUT;
       objectifs  = d.objectifs || {};
-      await Store.ecrire(CLE.obj, objectifs);
-      await Store.ecrire(CLE.hist, historique);
-      await Store.ecrire(CLE.poids, poids);
-      await Store.ecrire(CLE.plan, planning);
-      rendrePlanning(); rendreHistorique(); rendrePoids();
+      await Store.ecrire(cle("objectifs"), objectifs);
+      await Store.ecrire(cle("historique"), historique);
+      await Store.ecrire(cle("poids"), poids);
+      await Store.ecrire(cle("planning"), planning);
+      rendrePlanning(); rendreHistorique(); rendrePoids(); rendreCourse();
       alert("Données importées.");
     }catch(e){ alert("Fichier illisible : ce n'est pas une sauvegarde de l'app."); }
   };
@@ -795,6 +982,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "demarrer")            { ev.stopPropagation(); demarrerSeance(el.dataset.id); }
   else if (a === "ouvrir-seance")  { ouvrirSeance(el.dataset.id); }
   else if (a === "retour-seances") { rendreSeances(); }
+  else if (a === "filtre-lieu")    { filtreLieu = el.dataset.v; rendreSeances(); }
   else if (a === "valider")        { validerSerie(); }
   else if (a === "sauter")         { sauterSerie(); }
   else if (a === "corriger")       { corrigerSerie(Number(el.dataset.i)); }
@@ -822,40 +1010,48 @@ document.addEventListener("click", async (ev) => {
     ev.stopPropagation();
     if (confirm("Supprimer cette séance de l'historique ?")){
       historique = historique.filter(h => h.id !== Number(el.dataset.id));
-      await Store.ecrire(CLE.hist, historique);
+      await Store.ecrire(cle("historique"), historique);
       rendreHistorique();
     }
   }
   else if (a === "ajouter-poids")  { ajouterPoids(); }
+  else if (a === "ajouter-course") { ajouterCourse(); }
+  else if (a === "supprimer-course"){
+    courses = courses.filter(c => c.id !== Number(el.dataset.id));
+    await Store.ecrire(cle("courses"), courses);
+    rendreCourse();
+  }
   else if (a === "supprimer-poids"){
     poids = poids.filter(p => p.date !== el.dataset.date);
-    await Store.ecrire(CLE.poids, poids);
+    await Store.ecrire(cle("poids"), poids);
     rendrePoids();
   }
+  else if (a === "profil")         { changerProfil(el.dataset.v); }
+  else if (a === "nouveau-profil") { nouveauProfil(); }
   else if (a === "exporter")       { exporter(); }
   else if (a === "exporter-csv")   { exporterCSV(); }
   else if (a === "courbe-exo")     { courbeExercice(el.dataset.exo); }
   else if (a === "gist-envoyer")   { gistEnvoyer(); }
   else if (a === "gist-recuperer") { gistRecuperer(); }
-  else if (a === "programme")      {
-    reglages.programme = el.dataset.v;
-    await Store.ecrire(CLE.reg, reglages);
-    rendrePlanning();
-  }
   else if (a === "importer")       { $("#fichier-import").click(); }
 });
 
 // Changement d'une séance dans le planning
 document.addEventListener("change", async (ev) => {
   if (ev.target.matches("#liste-planning select")){
-    planning[ev.target.dataset.jour] = ev.target.value || null;
-    await Store.ecrire(CLE.plan, planning);
+    const j = ev.target.dataset.jour;
+    const i = Number(ev.target.dataset.i);
+    const ids = seancesDuJour(j);
+    if (ev.target.value === "") ids.splice(i, 1);   // "— retirer —"
+    else ids[i] = ev.target.value;                  // i vaut ids.length quand on ajoute
+    planning[j] = ids;
+    await Store.ecrire(cle("planning"), planning);
     rendrePlanning();
   }
   if (ev.target.id === "champ-gist-id" || ev.target.id === "champ-gist-token"){
     reglages.gistId    = $("#champ-gist-id").value.trim();
     reglages.gistToken = $("#champ-gist-token").value.trim();
-    await Store.ecrire(CLE.reg, reglages);
+    await Store.ecrire(cle("reglages"), reglages);
   }
   if (ev.target.id === "fichier-import" && ev.target.files[0]){
     importer(ev.target.files[0]);
@@ -869,27 +1065,33 @@ document.addEventListener("visibilitychange", () => {
 });
 
 
+/** Reprise des données enregistrées avant l'arrivée des profils
+    (anciennes clés "entr:historique" sans nom de profil). */
+async function recupererAnciennesDonnees(){
+  const ancien = await Store.lire("entr:historique", null);
+  if (ancien === null) return;                            // rien à reprendre
+  if ((await Store.lire(cle("historique"), null)) !== null) return;  // déjà fait
+  await Store.ecrire(cle("historique"), ancien);
+  await Store.ecrire(cle("poids"),        await Store.lire("entr:poids", []));
+  await Store.ecrire(cle("planning"),     await Store.lire("entr:planning", PLANNING_DEFAUT));
+  await Store.ecrire(cle("objectifs"),    await Store.lire("entr:objectifs", {}));
+  await Store.ecrire(cle("reglages"),     await Store.lire("entr:reglages", {}));
+}
+
 /* ==========================================================================
    13. DÉMARRAGE
    ========================================================================== */
 (async function demarrer(){
-  historique = await Store.lire(CLE.hist, []);
-  poids      = await Store.lire(CLE.poids, []);
-  planning   = await Store.lire(CLE.plan, PLANNING_DEFAUT);
-  active     = await Store.lire(CLE.active, null);
-  objectifs  = await Store.lire(CLE.obj, {});
-  reglages   = Object.assign({ programme:"A", gistToken:"", gistId:"" }, await Store.lire(CLE.reg, {}));
+  profils = await Store.lire(CLE_PROFILS, ["moi"]);
+  profil  = await Store.lire(CLE_ACTIF, profils[0]);
+  if (!profils.includes(profil)) profil = profils[0];
+  await Store.ecrire(CLE_PROFILS, profils);
 
-  $("#champ-gist-id").value    = reglages.gistId;
-  $("#champ-gist-token").value = reglages.gistToken;
+  await recupererAnciennesDonnees();
+  await chargerProfil();
 
-  // Mode application installable : ne fonctionne qu'en https (GitHub Pages), pas en fichier local
+  // Mode application installable : ne marche qu'en https (GitHub Pages), pas en local
   if ("serviceWorker" in navigator && location.protocol === "https:"){
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
-
-  rendrePlanning();
-  rendreSeances();
-  rendreHistorique();
-  rendrePoids();
 })();

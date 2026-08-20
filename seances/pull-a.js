@@ -2,7 +2,7 @@
    Copie ce fichier pour en créer une nouvelle, change l'id (il doit être unique),
    puis ajoute la ligne <script src="seances/mon-fichier.js"></script> dans index.html. */
 ajouterSeance({
-    id:"pull-a", nom:"Pull A", sousTitre:"Tirage · force puis volume", zone:"haut",
+    id:"pull-a", nom:"Pull A", sousTitre:"Tirage · force puis volume", lieu:"maison", materiel:["barre de traction", "barre basse", "barre de dips"], zone:"haut",
     blocs:[
       ECHAUFFEMENT_HAUT,
       { nom:"Partie 1 · Force et explosivité", tours:3, pauseExos:0, pauseTours:150,

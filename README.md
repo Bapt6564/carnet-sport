@@ -42,3 +42,12 @@ Onglet Historique : export JSON (sauvegarde complète), export CSV (pour
 ```
 python analyse.py series-2026-08-17.csv
 ```
+
+## Licence
+
+Code sous licence MIT — voir le fichier `LICENSE`. Réutilisation, modification
+et partage libres, en conservant la mention de copyright. La mention apparaît
+aussi en bas de l'écran Planning.
+
+Les contenus d'entraînement (choix des exercices, dosages) proviennent en partie
+d'un livre de street workout ; ils sont là pour un usage personnel.

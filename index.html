@@ -27,10 +27,18 @@
       </div>
       <p class="petit gris mono" id="date-jour"></p>
     </div>
+    <div class="ligne-champs" style="margin-bottom:12px" id="profils"></div>
     <div class="carte" style="padding:4px 0" id="liste-planning"></div>
     <p class="petit gris" style="margin-top:10px">Choix des séances : le planning est enregistré sur le téléphone.</p>
-    <div class="ligne-champs" style="margin-top:14px" id="choix-programme"></div>
     <div id="reprise"></div>
+
+    <!-- Remplace « Baptiste » par ton nom complet si tu veux. -->
+    <footer class="licence">
+      <p>Carnet d'entraînement — © 2026 Baptiste</p>
+      <p>Partagé sous licence MIT : réutilisation, modification et partage libres,
+         à condition de conserver cette mention d'origine. Fourni sans garantie.</p>
+      <p><a href="https://github.com/Bapt6564/carnet-sport">github.com/Bapt6564/carnet-sport</a></p>
+    </footer>
   </div>
 </section>
 
@@ -113,6 +121,67 @@
   </div>
 </section>
 
+<!-- ---------- COURSE ---------- -->
+<section id="vue-course" class="vue theme-course">
+  <div class="page">
+    <div class="entete">
+      <div>
+        <p class="oeil">Tapis et extérieur</p>
+        <h1>Course</h1>
+      </div>
+    </div>
+
+    <div class="carte">
+      <div class="ligne-champs">
+        <div>
+          <label for="champ-course-distance">Distance (km)</label>
+          <input id="champ-course-distance" class="mono" type="number" step="0.1" inputmode="decimal" placeholder="5.0">
+        </div>
+        <div>
+          <label for="champ-course-date">Date</label>
+          <input id="champ-course-date" type="date">
+        </div>
+      </div>
+
+      <div class="ligne-champs" style="margin-top:10px">
+        <div>
+          <label for="champ-course-min">Durée — minutes</label>
+          <input id="champ-course-min" class="mono" type="number" inputmode="numeric" placeholder="30">
+        </div>
+        <div>
+          <label for="champ-course-sec">secondes</label>
+          <input id="champ-course-sec" class="mono" type="number" inputmode="numeric" placeholder="00">
+        </div>
+      </div>
+
+      <div class="ligne-champs" style="margin-top:10px">
+        <div>
+          <label for="champ-course-inclinaison">Inclinaison (%)</label>
+          <input id="champ-course-inclinaison" class="mono" type="number" step="0.5" inputmode="decimal" placeholder="0">
+        </div>
+        <div>
+          <label for="champ-course-lieu">Support</label>
+          <select id="champ-course-lieu">
+            <option value="tapis">Tapis</option>
+            <option value="dehors">Extérieur</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label for="champ-course-note">Note</label>
+        <input id="champ-course-note" type="text" placeholder="fractionné, sensations, météo…">
+      </div>
+
+      <button class="btn plein large" style="margin-top:12px" data-action="ajouter-course">Enregistrer la sortie</button>
+    </div>
+
+    <div class="stat" id="course-stats"></div>
+    <div class="carte" id="course-courbe"></div>
+    <div id="liste-courses"></div>
+  </div>
+</section>
+
 <!-- ---------- SÉANCE EN DIRECT (plein écran, hors onglets) ---------- -->
 <section id="vue-seance" class="vue">
   <div class="barre-seance">
@@ -150,6 +219,10 @@
     <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4M12 8v4l3 2"/></svg>
     Historique
   </button>
+  <button data-vue="course">
+    <svg viewBox="0 0 24 24"><path d="M4 20c3-1 3-5 6-6s3 3 6 2 4-6 4-6"/><circle cx="15" cy="4.5" r="1.6"/></svg>
+    Course
+  </button>
   <button data-vue="poids">
     <svg viewBox="0 0 24 24"><path d="M4 19l5-8 4 4 7-10"/><path d="M4 19h16"/></svg>
     Poids
@@ -167,6 +240,8 @@
 <script src="seances/jambes-abdos.js"></script>
 <script src="seances/epaules.js"></script>
 <script src="seances/etirements.js"></script>
+<script src="seances/salle-haut.js"></script>
+<script src="seances/salle-jambes.js"></script>
 
 <script src="app.js"></script>
 </body>

@@ -37,9 +37,9 @@ def charger(chemin: Path) -> pd.DataFrame:
         donnees = json.loads(chemin.read_text(encoding="utf-8"))
         lignes = [
             {
+                "profil": donnees.get("profil", ""),
                 "date": seance["date"],
                 "seance": seance["nom"],
-                "programme": seance.get("programme", ""),
                 "bloc": serie["bloc"],
                 "tour": serie["tour"],
                 "exercice": serie["exo"],
@@ -166,6 +166,38 @@ def plateaux(df: pd.DataFrame, exercices, fenetre=4):
 # --------------------------------------------------------------------------
 # 5. Programme principal
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# 5 bis. Course à pied (présente uniquement dans les exports JSON)
+# --------------------------------------------------------------------------
+def courses(chemin: Path):
+    if chemin.suffix.lower() != ".json":
+        return []
+    données = json.loads(chemin.read_text(encoding="utf-8")).get("courses", [])
+    if not données:
+        return []
+    c = pd.DataFrame(données)
+    c["jour"] = pd.to_datetime(c["date"])
+    c["allure"] = (c["duree"] / 60) / c["distance"]        # min/km
+    c = c.sort_values("jour")
+
+    fig, ax = plt.subplots(figsize=(9, 3.6))
+    ax.plot(c["jour"], c["allure"], "o-", color="#2b6cb0", ms=4)
+    ax.invert_yaxis()                                       # plus bas = plus rapide
+    ax.set_ylabel("Allure (min/km)")
+    ax.set_title("Allure au fil des sorties")
+    ax.tick_params(axis="x", labelrotation=30, labelsize=8)
+    fig.tight_layout()
+    fig.savefig("course.png", dpi=140)
+    plt.close(fig)
+
+    return [
+        "",
+        f"Course : {len(c)} sorties, {c['distance'].sum():.1f} km",
+        f"  allure moyenne {c['allure'].mean():.2f} min/km, meilleure {c['allure'].min():.2f} min/km",
+        "  figure : course.png",
+    ]
+
+
 def main():
     ap = argparse.ArgumentParser(description="Analyse du carnet d'entraînement")
     ap.add_argument("fichier", type=Path, help="export CSV ou JSON de l'app")
@@ -209,6 +241,7 @@ def main():
         "Plateaux détectés :" if stagnants else "Aucun plateau détecté.",
         *stagnants,
         correlation,
+        *courses(args.fichier),
     ]
     texte = "\n".join(rapport)
     Path("plateaux.txt").write_text(texte + "\n", encoding="utf-8")

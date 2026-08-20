@@ -2,7 +2,7 @@
    Copie ce fichier pour en créer une nouvelle, change l'id (il doit être unique),
    puis ajoute la ligne <script src="seances/mon-fichier.js"></script> dans index.html. */
 ajouterSeance({
-    id:"epaules", nom:"Épaules", sousTitre:"Équilibre + endurance", zone:"haut",
+    id:"epaules", nom:"Épaules", sousTitre:"Équilibre + endurance", lieu:"maison", materiel:["un mur"], zone:"haut",
     blocs:[
       ECHAUFFEMENT_HAUT,
       { nom:"Partie 1 · Équilibre", tours:3, pauseExos:60, pauseTours:120,

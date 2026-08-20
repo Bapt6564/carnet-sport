@@ -2,7 +2,7 @@
    Copie ce fichier pour en créer une nouvelle, change l'id (il doit être unique),
    puis ajoute la ligne <script src="seances/mon-fichier.js"></script> dans index.html. */
 ajouterSeance({
-    id:"jambes-abdos", nom:"Jambes & Abdos", sousTitre:"Bas du corps + ceinture", zone:"bas",
+    id:"jambes-abdos", nom:"Jambes & Abdos", sousTitre:"Bas du corps + ceinture", lieu:"maison", zone:"bas",
     blocs:[
       ECHAUFFEMENT_BAS,
       { nom:"Partie 1 · Jambes", tours:3, pauseExos:45, pauseTours:120,
