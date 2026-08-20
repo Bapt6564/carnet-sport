@@ -140,6 +140,11 @@ label{ display:block; font-size:12px; color:var(--gris); margin-bottom:5px; lett
 .jour.aujourdhui .nom-jour{ color:var(--acier); }
 /* Pastille de couleur du lieu, devant chaque séance du planning */
 .puce{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; }
+
+/* Ligne d'actions sous les profils : renommer, supprimer */
+#profil-actions{ display:flex; gap:14px; align-items:center; margin-bottom:14px; font-size:12.5px; }
+#profil-actions button{ color:var(--acier); text-decoration:underline; }
+#profil-actions button.danger{ color:var(--brique); }
 .jour .contenu{ flex:1; min-width:0; }
 .jour select{ padding:7px 9px; font-size:14px; }
 

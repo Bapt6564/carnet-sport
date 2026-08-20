@@ -14,6 +14,12 @@ const Store = {
       return brut ? JSON.parse(brut) : defaut;
     }catch(e){ return defaut; }
   },
+  async effacer(cle){
+    try{
+      if (window.storage) await window.storage.delete(cle);
+      else localStorage.removeItem(cle);
+    }catch(e){ /* la clé n'existait pas : ce n'est pas grave */ }
+  },
   async ecrire(cle, valeur){
     try{
       const txt = JSON.stringify(valeur);
@@ -27,7 +33,12 @@ const Store = {
    cle("historique") vaut par exemple "entr:moi:historique". */
 const CLE_PROFILS = "entr:profils";        // la liste des profils
 const CLE_ACTIF   = "entr:profil-actif";   // le profil en cours
-function cle(nom){ return "entr:" + profil + ":" + nom; }
+function cle(nom){ return cleDe(profil, nom); }
+function cleDe(quiProfil, nom){ return "entr:" + quiProfil + ":" + nom; }
+
+/* Tout ce qu'un profil possède en propre : sert au renommage et à la suppression. */
+const DONNEES_PROFIL = ["historique", "poids", "courses", "planning",
+                        "objectifs", "reglages", "seance-active"];
 
 /* L'état de l'app, chargé au démarrage. */
 let historique = [];   // séances terminées
@@ -169,6 +180,40 @@ function rendreProfils(){
   $("#profils").innerHTML = profils.map(nom => `
     <button class="btn${nom===profil?" plein":""}" data-action="profil" data-v="${txt(nom)}">${txt(nom)}</button>`
   ).join("") + `<button class="btn" data-action="nouveau-profil">+</button>`;
+
+  // Actions sur le profil affiché
+  $("#profil-actions").innerHTML = `
+    <span class="gris">Profil « ${txt(profil)} »</span>
+    <button data-action="renommer-profil">Renommer</button>
+    ${profils.length > 1 ? `<button class="danger" data-action="supprimer-profil">Supprimer</button>` : ""}`;
+}
+
+/** Change le nom d'un profil : ses données sont recopiées sous le nouveau nom. */
+async function renommerProfil(){
+  const nom = (prompt("Nouveau nom du profil", profil) || "").trim();
+  if (!nom || nom === profil) return;
+  if (profils.includes(nom)) return alert("Ce nom est déjà pris.");
+
+  for (const donnee of DONNEES_PROFIL){
+    const valeur = await Store.lire(cleDe(profil, donnee), null);
+    if (valeur !== null) await Store.ecrire(cleDe(nom, donnee), valeur);
+    await Store.effacer(cleDe(profil, donnee));
+  }
+  profils[profils.indexOf(profil)] = nom;
+  await Store.ecrire(CLE_PROFILS, profils);
+  await changerProfil(nom);
+}
+
+/** Supprime un profil et toutes ses données. Irréversible. */
+async function supprimerProfil(){
+  if (profils.length < 2) return alert("Il faut garder au moins un profil.");
+  if (!confirm("Supprimer le profil « " + profil + " » et tout son historique ?")) return;
+  if (!confirm("Cette suppression est définitive. Confirmer ?")) return;
+
+  for (const donnee of DONNEES_PROFIL) await Store.effacer(cleDe(profil, donnee));
+  profils = profils.filter(p => p !== profil);
+  await Store.ecrire(CLE_PROFILS, profils);
+  await changerProfil(profils[0]);
 }
 
 /** Recharge toutes les données du profil courant et rafraîchit l'affichage. */
@@ -1029,6 +1074,8 @@ document.addEventListener("click", async (ev) => {
   }
   else if (a === "profil")         { changerProfil(el.dataset.v); }
   else if (a === "nouveau-profil") { nouveauProfil(); }
+  else if (a === "renommer-profil") { renommerProfil(); }
+  else if (a === "supprimer-profil"){ supprimerProfil(); }
   else if (a === "exporter")       { exporter(); }
   else if (a === "exporter-csv")   { exporterCSV(); }
   else if (a === "courbe-exo")     { courbeExercice(el.dataset.exo); }
