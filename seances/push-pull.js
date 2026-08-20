@@ -7,9 +7,10 @@ ajouterSeance({
       ECHAUFFEMENT_HAUT,
       { nom:"Partie 1 · Force et explosivité", tours:3, pauseExos:0, pauseTours:120,
         exercices:[
-          { nom:"90° + pompes",         type:"reps",  objectif:"MAX", note:"Variante : pseudo-pompes" },
-          { nom:"Tractions explosives", type:"reps",  objectif:"MAX", programme:"A" },
-          { nom:"Montées en front lever", type:"temps", objectif:8,   programme:"B", note:"Variante : jambes pliées" }
+          { nom:"90° + pompes",         type:"reps",  objectif:"MAX",
+            note:"Variante : pseudo-pompes",
+            detail:"Position de gainage, mains au niveau des hanches.\nAvance le buste vers l'avant jusqu'à sentir les pieds décoller, tiens une seconde, puis repousse le sol comme pour une pompe.\nVariante plus facile : pseudo-pompes, mains près des hanches et doigts tournés vers l'extérieur." },
+          { nom:"Tractions explosives", type:"reps",  objectif:"MAX", note:"Si tu travailles le front lever : montées en front lever, 8 s" }
         ]},
       { nom:"Partie 2 · Endurance musculaire", tours:3, pauseExos:0, pauseTours:120,
         exercices:[

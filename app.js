@@ -35,7 +35,10 @@ let poids      = [];   // { date:"2026-08-17", valeur:72.4 }
 let planning   = {};   // { 1:"push-pull", ... }
 let active     = null;  // séance en cours (voir démarrerSeance)
 let objectifs  = {};   // objectifs relevés par la progression auto : { "Pompes diamant": 17 }
-let reglages   = { programme:"A", gistToken:"", gistId:"" };
+let reglages   = { gistToken:"", gistId:"" };
+let courses    = [];   // sorties de course : { date, distance, duree, inclinaison, lieu, note }
+let profil     = "moi";       // profil en cours
+let profils    = ["moi"];     // tous les profils connus
 
 
 /* ==========================================================================
@@ -352,10 +355,10 @@ function construireSeries(seance){
 async function demarrerSeance(id){
   const s = seanceParId(id);
   if (!s) return;
-  active = { seanceId:s.id, nom:s.nom, chaud:!!s.chaud, debut:Date.now(),
-             programme:reglages.programme, ressenti:null,
-             index:0, series:construireSeries(s, reglages.programme) };
-  await Store.ecrire(CLE.active, active);
+  active = { seanceId:s.id, nom:s.nom, lieu:s.lieu, debut:Date.now(),
+             ressenti:null,
+             index:0, series:construireSeries(s) };
+  await Store.ecrire(cle("seance-active"), active);
   garderEcranAllume();
   naviguer("seance");
   rendreSeanceActive();
@@ -889,10 +892,10 @@ function exporter(){
 
 /** Export CSV : une ligne par série, pour analyser dans Python. */
 function exporterCSV(){
-  const lignes = ["date;seance;programme;bloc;tour;exercice;type;valeur;lest;ressenti"];
+  const lignes = ["profil;date;seance;bloc;tour;exercice;type;valeur;lest;ressenti"];
   historique.forEach(h => h.series.forEach(s => {
     lignes.push([
-      h.date, h.nom, h.programme || "", s.bloc, s.tour, s.exo, s.type,
+      profil, h.date, h.nom, s.bloc, s.tour, s.exo, s.type,
       s.valeur, s.poids === null || s.poids === undefined ? "" : s.poids, h.ressenti || ""
     ].join(";"));
   }));
@@ -1079,15 +1082,13 @@ async function recupererAnciennesDonnees(){
    13. DÉMARRAGE
    ========================================================================== */
 (async function demarrer(){
-  historique = await Store.lire(CLE.hist, []);
-  poids      = await Store.lire(CLE.poids, []);
-  planning   = await Store.lire(CLE.plan, PLANNING_DEFAUT);
-  active     = await Store.lire(CLE.active, null);
-  objectifs  = await Store.lire(CLE.obj, {});
-  reglages   = Object.assign({ programme:"A", gistToken:"", gistId:"" }, await Store.lire(CLE.reg, {}));
+  profils = await Store.lire(CLE_PROFILS, ["moi"]);
+  profil  = await Store.lire(CLE_ACTIF, profils[0]);
+  if (!profils.includes(profil)) profil = profils[0];
+  await Store.ecrire(CLE_PROFILS, profils);
 
-  $("#champ-gist-id").value    = reglages.gistId;
-  $("#champ-gist-token").value = reglages.gistToken;
+  await recupererAnciennesDonnees();
+  await chargerProfil();
 
   // Mode application installable : ne marche qu'en https (GitHub Pages), pas en local
   if ("serviceWorker" in navigator && location.protocol === "https:"){
